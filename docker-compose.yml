@@ -1,0 +1,67 @@
+version: '3.8'
+
+services:
+  pdf-extractor:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        TARGETPLATFORM: linux/amd64
+    image: pdf-extractor:latest
+    container_name: pdf-outline-extractor
+    
+    # Resource limits (important for hackathon requirements)
+    deploy:
+      resources:
+        limits:
+          cpus: '8'
+          memory: 16G
+        reservations:
+          cpus: '2'
+          memory: 4G
+    
+    # Volumes for input/output
+    volumes:
+      - ./input:/app/input:ro      # Read-only input
+      - ./output:/app/output        # Output directory
+      - ./models:/app/models:ro     # Pre-trained models (read-only)
+    
+    # Environment variables
+    environment:
+      - PYTHONUNBUFFERED=1
+      - DEBUG=${DEBUG:-0}
+      - PROCESSING_TIMEOUT=10
+    
+    # Network isolation (hackathon requirement)
+    network_mode: none
+    
+    # Restart policy
+    restart: unless-stopped
+    
+    # Health check
+    healthcheck:
+      test: ["CMD", "python", "-c", "import sys; sys.path.insert(0, '/app/src'); from pdf_processor import AdvancedPDFProcessor; print('OK')"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+
+  # Optional: Development container with debugging tools
+  pdf-extractor-dev:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: builder  # If using multi-stage
+    image: pdf-extractor:dev
+    container_name: pdf-outline-extractor-dev
+    volumes:
+      - ./src:/app/src          # Mount source for live editing
+      - ./input:/app/input
+      - ./output:/app/output
+      - ./models:/app/models
+    environment:
+      - DEBUG=1
+      - PYTHONUNBUFFERED=1
+    command: /bin/bash          # Keep container running for debugging
+    stdin_open: true
+    tty: true

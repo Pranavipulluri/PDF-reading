@@ -26,8 +26,9 @@ def ensure_nltk_data():
             nltk.download('stopwords', quiet=True)
         except:
             pass  # Fail silently if download fails
+        
+class SemanticTextAnalyzer:
 
-class EnhancedSemanticTextAnalyzer:
     """Enhanced text analysis with junk filtering and multilingual detection"""
     
     def __init__(self):

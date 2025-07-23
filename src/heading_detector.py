@@ -4,6 +4,7 @@ Combines rule-based detection, ML classification, layout analysis, and semantic 
 """
 
 import logging
+import re
 from typing import List, Dict, Any, Optional, Tuple
 import numpy as np
 from pathlib import Path

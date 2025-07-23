@@ -43,6 +43,12 @@ class SmartTitleExtractor:
                 '!': -0.2,  # Exclamations rare in formal titles
             }
         }
+
+        # Title keywords for content analysis
+        self.title_keywords = {
+            'analysis', 'study', 'report', 'guide', 'manual', 'handbook', 'overview',
+            'introduction', 'survey', 'review', 'proceedings', 'white paper', 'research'
+        }
     
     def extract_title(self, blocks: List[Dict[str, Any]], fallback_title: str = "") -> str:
         """
@@ -60,8 +66,11 @@ class SmartTitleExtractor:
         
         self.logger.info("Starting smart title extraction with multi-candidate analysis")
         
+        # Normalize block structure to handle different data formats
+        normalized_blocks = self._normalize_blocks(blocks)
+        
         # Step 1: Find title candidates from first 2-3 pages
-        candidates = self._find_title_candidates(blocks)
+        candidates = self._find_title_candidates(normalized_blocks)
         
         if not candidates:
             self.logger.warning("No title candidates found, using fallback")
@@ -79,6 +88,75 @@ class SmartTitleExtractor:
         self.logger.info(f"Selected title: '{final_title}' (score: {best_candidate['total_score']:.3f}, method: {best_candidate['source']})")
         
         return final_title
+
+    def _normalize_blocks(self, blocks: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
+        """Normalize block structure to handle different data formats"""
+        normalized = []
+        
+        for block in blocks:
+            normalized_block = {
+                'text': str(block.get('text', '')).strip(),
+                'page': block.get('page', 1),
+                'font_size': self._extract_font_size(block),
+                'font_name': self._extract_font_name(block),
+                'is_bold': block.get('is_bold', False),
+                'is_italic': block.get('is_italic', False),
+                'bbox': self._extract_bbox(block),
+                'x0': block.get('x0', 0),
+                'y0': block.get('y0', 0),
+                'x1': block.get('x1', 0),
+                'y1': block.get('y1', 0)
+            }
+            
+            # Only add blocks with actual text content
+            if normalized_block['text']:
+                normalized.append(normalized_block)
+        
+        return normalized
+
+    def _extract_font_size(self, block: Dict[str, Any]) -> float:
+        """Safely extract font size from block with fallbacks"""
+        # Try direct font_size key
+        if 'font_size' in block and block['font_size'] is not None:
+            return float(block['font_size'])
+        
+        # Try font_info structure
+        if 'font_info' in block and isinstance(block['font_info'], dict):
+            font_info = block['font_info']
+            if 'size' in font_info and font_info['size'] is not None:
+                return float(font_info['size'])
+        
+        # Default font size
+        return 12.0
+
+    def _extract_font_name(self, block: Dict[str, Any]) -> str:
+        """Safely extract font name from block with fallbacks"""
+        # Try direct font_name key
+        if 'font_name' in block and block['font_name']:
+            return str(block['font_name'])
+        
+        # Try font_info structure
+        if 'font_info' in block and isinstance(block['font_info'], dict):
+            font_info = block['font_info']
+            if 'name' in font_info and font_info['name']:
+                return str(font_info['name'])
+        
+        return 'unknown'
+
+    def _extract_bbox(self, block: Dict[str, Any]) -> List[float]:
+        """Safely extract bounding box from block"""
+        if 'bbox' in block and block['bbox']:
+            bbox = block['bbox']
+            if isinstance(bbox, (list, tuple)) and len(bbox) >= 4:
+                return [float(x) for x in bbox[:4]]
+        
+        # Try individual coordinates
+        x0 = block.get('x0', 0)
+        y0 = block.get('y0', 0)
+        x1 = block.get('x1', 0)
+        y1 = block.get('y1', 0)
+        
+        return [float(x0), float(y0), float(x1), float(y1)]
     
     def _find_title_candidates(self, blocks: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
         """Find potential title candidates from first few pages"""
@@ -120,20 +198,20 @@ class SmartTitleExtractor:
         if not page_blocks:
             return []
         
-        # Get font sizes
-        font_sizes = [b.get('font_info', {}).get('size', 12) for b in page_blocks]
-        max_font_size = max(font_sizes) if font_sizes else 12
+        # Get font sizes - using normalized font_size
+        font_sizes = [b['font_size'] for b in page_blocks]
+        max_font_size = max(font_sizes) if font_sizes else 12.0
         
         # Find blocks with largest fonts (within tolerance)
         size_tolerance = 1.0  # Allow slight variations
         large_font_blocks = [
             b for b in page_blocks 
-            if b.get('font_info', {}).get('size', 12) >= max_font_size - size_tolerance
+            if b['font_size'] >= max_font_size - size_tolerance
         ]
         
         candidates = []
         for block in large_font_blocks:
-            text = block.get('text', '').strip()
+            text = block['text'].strip()
             word_count = len(text.split())
             
             # Filter for reasonable title characteristics
@@ -141,11 +219,16 @@ class SmartTitleExtractor:
                 candidate = {
                     'text': text,
                     'source': 'font_size',
-                    'page': block.get('page', 1),
-                    'bbox': block.get('bbox', [0, 0, 0, 0]),
-                    'font_info': block.get('font_info', {}),
+                    'page': block['page'],
+                    'bbox': block['bbox'],
+                    'font_info': {
+                        'size': block['font_size'],
+                        'name': block['font_name'],
+                        'is_bold': block['is_bold'],
+                        'is_italic': block['is_italic']
+                    },
                     'metadata': {
-                        'font_size': block.get('font_info', {}).get('size', 12),
+                        'font_size': block['font_size'],
                         'max_font_size': max_font_size,
                         'word_count': word_count
                     }
@@ -162,7 +245,7 @@ class SmartTitleExtractor:
         # Group by page for position analysis
         pages = {}
         for block in blocks:
-            page_num = block.get('page', 1)
+            page_num = block['page']
             if page_num not in pages:
                 pages[page_num] = []
             pages[page_num].append(block)
@@ -171,13 +254,12 @@ class SmartTitleExtractor:
             if page_num > 2:  # Only first 2 pages
                 continue
             
-            # Calculate page dimensions
+            # Calculate page dimensions using bbox
             if not page_blocks:
                 continue
             
-            x_positions = [b.get('bbox', [0, 0, 0, 0])[0] for b in page_blocks]
-            x_max_positions = [b.get('bbox', [0, 0, 0, 0])[2] for b in page_blocks]
-            y_positions = [b.get('bbox', [0, 0, 0, 0])[1] for b in page_blocks]
+            x_positions = [b['bbox'][0] for b in page_blocks]
+            x_max_positions = [b['bbox'][2] for b in page_blocks]
             
             if not x_positions:
                 continue
@@ -185,17 +267,21 @@ class SmartTitleExtractor:
             min_x = min(x_positions)
             max_x = max(x_max_positions)
             page_width = max_x - min_x
+            
+            if page_width <= 0:
+                continue
+                
             page_center = (min_x + max_x) / 2
             
             # Find centered candidates
             for block in page_blocks:
-                bbox = block.get('bbox', [0, 0, 0, 0])
+                bbox = block['bbox']
                 block_center = (bbox[0] + bbox[2]) / 2
                 distance_from_center = abs(block_center - page_center)
                 
                 # Consider "centered" if within 25% of page width from center
                 if distance_from_center < page_width * 0.25:
-                    text = block.get('text', '').strip()
+                    text = block['text'].strip()
                     word_count = len(text.split())
                     
                     if 2 <= word_count <= 15 and len(text) <= 150:
@@ -204,11 +290,16 @@ class SmartTitleExtractor:
                             'source': 'centered_position',
                             'page': page_num,
                             'bbox': bbox,
-                            'font_info': block.get('font_info', {}),
+                            'font_info': {
+                                'size': block['font_size'],
+                                'name': block['font_name'],
+                                'is_bold': block['is_bold'],
+                                'is_italic': block['is_italic']
+                            },
                             'metadata': {
                                 'center_distance': distance_from_center,
                                 'page_width': page_width,
-                                'center_ratio': distance_from_center / page_width,
+                                'center_ratio': distance_from_center / page_width if page_width > 0 else 0.5,
                                 'word_count': word_count
                             }
                         }
@@ -222,7 +313,7 @@ class SmartTitleExtractor:
         candidates = []
         
         for block in blocks:
-            text = block.get('text', '').strip()
+            text = block['text'].strip()
             text_lower = text.lower()
             
             # Check each title pattern
@@ -235,9 +326,14 @@ class SmartTitleExtractor:
                         candidate = {
                             'text': extracted_title,
                             'source': 'pattern_match',
-                            'page': block.get('page', 1),
-                            'bbox': block.get('bbox', [0, 0, 0, 0]),
-                            'font_info': block.get('font_info', {}),
+                            'page': block['page'],
+                            'bbox': block['bbox'],
+                            'font_info': {
+                                'size': block['font_size'],
+                                'name': block['font_name'],
+                                'is_bold': block['is_bold'],
+                                'is_italic': block['is_italic']
+                            },
                             'metadata': {
                                 'pattern_confidence': confidence,
                                 'matched_pattern': pattern,
@@ -254,11 +350,11 @@ class SmartTitleExtractor:
         candidates = []
         
         # Sort blocks by page and position
-        sorted_blocks = sorted(blocks, key=lambda x: (x.get('page', 1), x.get('bbox', [0, 0, 0, 0])[1]))
+        sorted_blocks = sorted(blocks, key=lambda x: (x['page'], x['bbox'][1]))
         
         # Look at first 10 blocks for content-based titles
         for block in sorted_blocks[:10]:
-            text = block.get('text', '').strip()
+            text = block['text'].strip()
             word_count = len(text.split())
             
             if word_count < 2 or word_count > 20 or len(text) > 200:
@@ -271,9 +367,14 @@ class SmartTitleExtractor:
                 candidate = {
                     'text': text,
                     'source': 'content_analysis',
-                    'page': block.get('page', 1),
-                    'bbox': block.get('bbox', [0, 0, 0, 0]),
-                    'font_info': block.get('font_info', {}),
+                    'page': block['page'],
+                    'bbox': block['bbox'],
+                    'font_info': {
+                        'size': block['font_size'],
+                        'name': block['font_name'],
+                        'is_bold': block['is_bold'],
+                        'is_italic': block['is_italic']
+                    },
                     'metadata': {
                         'content_score': content_score,
                         'word_count': word_count,
@@ -292,7 +393,7 @@ class SmartTitleExtractor:
         # Group by page
         pages = {}
         for block in blocks:
-            page_num = block.get('page', 1)
+            page_num = block['page']
             if page_num <= 2:  # Only first 2 pages
                 if page_num not in pages:
                     pages[page_num] = []
@@ -300,16 +401,16 @@ class SmartTitleExtractor:
         
         for page_num, page_blocks in pages.items():
             # Sort by y position (top to bottom)
-            page_blocks.sort(key=lambda x: x.get('bbox', [0, 0, 0, 0])[1])
+            page_blocks.sort(key=lambda x: x['bbox'][1])
             
             # Consider top 30% of page
             if page_blocks:
-                max_y = max(b.get('bbox', [0, 0, 0, 0])[3] for b in page_blocks)
+                max_y = max(b['bbox'][3] for b in page_blocks)
                 top_threshold = max_y * 0.3
                 
                 for block in page_blocks:
-                    if block.get('bbox', [0, 0, 0, 0])[1] <= top_threshold:
-                        text = block.get('text', '').strip()
+                    if block['bbox'][1] <= top_threshold:
+                        text = block['text'].strip()
                         word_count = len(text.split())
                         
                         if 3 <= word_count <= 15:
@@ -317,10 +418,15 @@ class SmartTitleExtractor:
                                 'text': text,
                                 'source': 'top_position',
                                 'page': page_num,
-                                'bbox': block.get('bbox', [0, 0, 0, 0]),
-                                'font_info': block.get('font_info', {}),
+                                'bbox': block['bbox'],
+                                'font_info': {
+                                    'size': block['font_size'],
+                                    'name': block['font_name'],
+                                    'is_bold': block['is_bold'],
+                                    'is_italic': block['is_italic']
+                                },
                                 'metadata': {
-                                    'y_position': block.get('bbox', [0, 0, 0, 0])[1],
+                                    'y_position': block['bbox'][1],
                                     'top_threshold': top_threshold,
                                     'word_count': word_count
                                 }
@@ -352,7 +458,7 @@ class SmartTitleExtractor:
                 score += penalty
         
         # Capitalization bonus
-        if text[0].isupper():
+        if text and text[0].isupper():
             score += 0.1
         
         if text.istitle():
@@ -475,7 +581,6 @@ class SmartTitleExtractor:
         """Calculate length-based score"""
         
         word_count = len(text.split())
-        char_count = len(text)
         
         # Optimal length scoring
         if 4 <= word_count <= 8:
@@ -517,8 +622,6 @@ class SmartTitleExtractor:
                 unique_candidates.append(candidate)
         
         return unique_candidates
-    
-
 
     def _clean_and_validate_title(self, title: str) -> str:
         """Clean and validate the final title."""
@@ -535,245 +638,6 @@ class SmartTitleExtractor:
         # Remove file extensions
         title = re.sub(r'\.(pdf|doc|docx|txt)$', '', title, flags=re.IGNORECASE)
         
-        # Fallback if title is empty after cleaning
-        if not title.strip():
-            return "Untitled Document"
-        
-        return title.strip()
-
-        
-    def extract_title(self, blocks: List[Dict[str, Any]], fallback_title: str = "") -> str:
-        """
-        Extract document title using multiple strategies
-        
-        Args:
-            blocks: List of text blocks from PDF
-            fallback_title: Fallback title (usually filename)
-            
-        Returns:
-            Extracted or inferred title
-        """
-        if not blocks:
-            return fallback_title or "Untitled Document"
-        
-        # Strategy 1: Look for largest font on first few pages
-        font_based_title = self._find_title_by_font_size(blocks)
-        
-        # Strategy 2: Look for centered text on first page
-        position_based_title = self._find_title_by_position(blocks)
-        
-        # Strategy 3: Look for explicit title patterns
-        pattern_based_title = self._find_title_by_patterns(blocks)
-        
-        # Strategy 4: Look for document metadata or first significant text
-        content_based_title = self._find_title_by_content(blocks)
-        
-        # Choose best title from candidates
-        candidates = [
-            (font_based_title, "font"),
-            (position_based_title, "position"), 
-            (pattern_based_title, "pattern"),
-            (content_based_title, "content")
-        ]
-        
-        best_title = self._select_best_title(candidates, fallback_title)
-        
-        # Clean up and validate title
-        final_title = self._clean_title(best_title)
-        
-        self.logger.info(f"Extracted title: '{final_title}'")
-        return final_title
-    
-    def _find_title_by_font_size(self, blocks: List[Dict[str, Any]]) -> Optional[str]:
-        """Find title based on largest font size on first few pages"""
-        # Only look at first 3 pages
-        first_pages = [b for b in blocks if b["page"] <= 3]
-        
-        if not first_pages:
-            return None
-        
-        # Find blocks with largest font size
-        max_font_size = max(b["font_size"] for b in first_pages)
-        largest_blocks = [b for b in first_pages if b["font_size"] == max_font_size]
-        
-        # Filter by reasonable title characteristics
-        title_candidates = []
-        for block in largest_blocks:
-            text = block["text"].strip()
-            word_count = len(text.split())
-            
-            # Title should be reasonable length
-            if 2 <= word_count <= 20 and len(text) <= 200:
-                # Prefer text from first page
-                priority = 1 if block["page"] == 1 else 2
-                title_candidates.append((text, priority, block["page"]))
-        
-        if title_candidates:
-            # Sort by priority (page number) and return best
-            title_candidates.sort(key=lambda x: (x[1], x[2]))
-            return title_candidates[0][0]
-        
-        return None
-    
-    def _find_title_by_position(self, blocks: List[Dict[str, Any]]) -> Optional[str]:
-        """Find title based on centered position on first page"""
-        first_page = [b for b in blocks if b["page"] == 1]
-        
-        if not first_page:
-            return None
-        
-        # Calculate page width
-        min_x = min(b["x0"] for b in first_page)
-        max_x = max(b["x1"] for b in first_page)
-        page_width = max_x - min_x
-        page_center = (min_x + max_x) / 2
-        
-        # Find blocks that are approximately centered
-        centered_blocks = []
-        for block in first_page:
-            block_center = (block["x0"] + block["x1"]) / 2
-            distance_from_center = abs(block_center - page_center)
-            
-            # Consider "centered" if within 20% of page width from center
-            if distance_from_center < page_width * 0.2:
-                text = block["text"].strip()
-                word_count = len(text.split())
-                
-                # Filter for title-like characteristics
-                if (2 <= word_count <= 15 and 
-                    len(text) <= 150 and
-                    not text.isdigit() and
-                    block["y0"] < max(b["y0"] for b in first_page) * 0.5):  # Upper half of page
-                    
-                    centered_blocks.append((text, block["font_size"], block["y0"]))
-        
-        if centered_blocks:
-            # Sort by font size (desc) and position (asc - higher on page)
-            centered_blocks.sort(key=lambda x: (-x[1], x[2]))
-            return centered_blocks[0][0]
-        
-        return None
-    
-    def _find_title_by_patterns(self, blocks: List[Dict[str, Any]]) -> Optional[str]:
-        """Find title using explicit title patterns"""
-        first_pages = [b for b in blocks if b["page"] <= 2]
-        
-        for block in first_pages:
-            text = block["text"].strip()
-            text_lower = text.lower()
-            
-            # Check for explicit title patterns
-            for pattern in self.title_patterns:
-                match = re.search(pattern, text_lower, re.IGNORECASE | re.MULTILINE)
-                if match:
-                    title = match.group(1).strip()
-                    if len(title.split()) >= 2:
-                        return title
-            
-            # Check for lines starting with common title indicators
-            if text_lower.startswith('title:'):
-                title = text[6:].strip()
-                if title:
-                    return title
-        
-        return None
-    
-    def _find_title_by_content(self, blocks: List[Dict[str, Any]]) -> Optional[str]:
-        """Find title based on content analysis"""
-        first_page = [b for b in blocks if b["page"] == 1]
-        
-        if not first_page:
-            return None
-        
-        # Sort by position (top to bottom)
-        first_page.sort(key=lambda x: x["y0"])
-        
-        # Look for first substantial text that could be a title
-        for block in first_page[:10]:  # Check first 10 blocks
-            text = block["text"].strip()
-            word_count = len(text.split())
-            
-            # Skip very short or very long text
-            if word_count < 2 or word_count > 20 or len(text) > 200:
-                continue
-            
-            # Skip common non-title text
-            text_lower = text.lower()
-            if any(skip in text_lower for skip in ['page', 'copyright', '©', 'abstract']):
-                continue
-            
-            # Prefer text with title-like characteristics
-            has_title_keywords = any(keyword in text_lower for keyword in self.title_keywords)
-            is_capitalized = text[0].isupper() if text else False
-            
-            if has_title_keywords or is_capitalized:
-                return text
-        
-        # Fallback: return first non-trivial text
-        for block in first_page[:5]:
-            text = block["text"].strip()
-            word_count = len(text.split())
-            if 3 <= word_count <= 15:
-                return text
-        
-        return None
-    
-    def _select_best_title(self, candidates: List[tuple], fallback: str) -> str:
-        """Select the best title from multiple candidates"""
-        # Filter out None candidates
-        valid_candidates = [(title, source) for title, source in candidates if title]
-        
-        if not valid_candidates:
-            return fallback or "Untitled Document"
-        
-        # Scoring system for different sources
-        source_scores = {
-            "pattern": 4,    # Explicit title patterns are best
-            "position": 3,   # Centered text is good
-            "font": 2,       # Large font is decent
-            "content": 1     # Content analysis is fallback
-        }
-        
-        # Score each candidate
-        scored_candidates = []
-        for title, source in valid_candidates:
-            base_score = source_scores.get(source, 0)
-            
-            # Additional scoring factors
-            word_count = len(title.split())
-            length_score = 1 if 3 <= word_count <= 10 else 0.5
-            
-            # Bonus for title-like keywords
-            keyword_bonus = 0.5 if any(kw in title.lower() for kw in self.title_keywords) else 0
-            
-            total_score = base_score + length_score + keyword_bonus
-            scored_candidates.append((title, total_score, source))
-        
-        # Sort by score and return best
-        scored_candidates.sort(key=lambda x: x[1], reverse=True)
-        
-        best_title = scored_candidates[0][0]
-        best_source = scored_candidates[0][2]
-        
-        self.logger.debug(f"Selected title from {best_source}: '{best_title}'")
-        return best_title
-    
-    import re
-
-    def _clean_title(self, title: str) -> str:
-        """Clean and normalize the extracted title."""
-        if not title:
-            return "Untitled Document"
-
-        # Remove extra whitespace
-        title = ' '.join(title.split())
-
-        # Remove common prefixes like 'Title:'
-        title = re.sub(r'^title[:\s]+', '', title, flags=re.IGNORECASE)
-
-        # Remove common file extensions if accidentally included
-        title = re.sub(r'\.(pdf|doc|docx|txt)$', '', title, flags=re.IGNORECASE)
-
         # Capitalize first letter if needed
         if title and title[0].islower():
             title = title[0].upper() + title[1:]
@@ -785,247 +649,12 @@ class SmartTitleExtractor:
                 title = ' '.join(words[:-1]) + "..."
             else:
                 title = title[:97] + "..."
-
-        return title
-
-    
-    def extract_title(self, blocks: List[Dict[str, Any]], fallback_title: str = "") -> str:
-        """
-        Extract document title using multiple strategies
         
-        Args:
-            blocks: List of text blocks from PDF
-            fallback_title: Fallback title (usually filename)
-            
-        Returns:
-            Extracted or inferred title
-        """
-        if not blocks:
-            return fallback_title or "Untitled Document"
-        
-        # Strategy 1: Look for largest font on first few pages
-        font_based_title = self._find_title_by_font_size(blocks)
-        
-        # Strategy 2: Look for centered text on first page
-        position_based_title = self._find_title_by_position(blocks)
-        
-        # Strategy 3: Look for explicit title patterns
-        pattern_based_title = self._find_title_by_patterns(blocks)
-        
-        # Strategy 4: Look for document metadata or first significant text
-        content_based_title = self._find_title_by_content(blocks)
-        
-        # Choose best title from candidates
-        candidates = [
-            (font_based_title, "font"),
-            (position_based_title, "position"), 
-            (pattern_based_title, "pattern"),
-            (content_based_title, "content")
-        ]
-        
-        best_title = self._select_best_title(candidates, fallback_title)
-        
-        # Clean up and validate title
-        final_title = self._clean_title(best_title)
-        
-        self.logger.info(f"Extracted title: '{final_title}'")
-        return final_title
-    
-    def _find_title_by_font_size(self, blocks: List[Dict[str, Any]]) -> Optional[str]:
-        """Find title based on largest font size on first few pages"""
-        # Only look at first 3 pages
-        first_pages = [b for b in blocks if b["page"] <= 3]
-        
-        if not first_pages:
-            return None
-        
-        # Find blocks with largest font size
-        max_font_size = max(b["font_size"] for b in first_pages)
-        largest_blocks = [b for b in first_pages if b["font_size"] == max_font_size]
-        
-        # Filter by reasonable title characteristics
-        title_candidates = []
-        for block in largest_blocks:
-            text = block["text"].strip()
-            word_count = len(text.split())
-            
-            # Title should be reasonable length
-            if 2 <= word_count <= 20 and len(text) <= 200:
-                # Prefer text from first page
-                priority = 1 if block["page"] == 1 else 2
-                title_candidates.append((text, priority, block["page"]))
-        
-        if title_candidates:
-            # Sort by priority (page number) and return best
-            title_candidates.sort(key=lambda x: (x[1], x[2]))
-            return title_candidates[0][0]
-        
-        return None
-    
-    def _find_title_by_position(self, blocks: List[Dict[str, Any]]) -> Optional[str]:
-        """Find title based on centered position on first page"""
-        first_page = [b for b in blocks if b["page"] == 1]
-        
-        if not first_page:
-            return None
-        
-        # Calculate page width
-        min_x = min(b["x0"] for b in first_page)
-        max_x = max(b["x1"] for b in first_page)
-        page_width = max_x - min_x
-        page_center = (min_x + max_x) / 2
-        
-        # Find blocks that are approximately centered
-        centered_blocks = []
-        for block in first_page:
-            block_center = (block["x0"] + block["x1"]) / 2
-            distance_from_center = abs(block_center - page_center)
-            
-            # Consider "centered" if within 20% of page width from center
-            if distance_from_center < page_width * 0.2:
-                text = block["text"].strip()
-                word_count = len(text.split())
-                
-                # Filter for title-like characteristics
-                if (2 <= word_count <= 15 and 
-                    len(text) <= 150 and
-                    not text.isdigit() and
-                    block["y0"] < max(b["y0"] for b in first_page) * 0.5):  # Upper half of page
-                    
-                    centered_blocks.append((text, block["font_size"], block["y0"]))
-        
-        if centered_blocks:
-            # Sort by font size (desc) and position (asc - higher on page)
-            centered_blocks.sort(key=lambda x: (-x[1], x[2]))
-            return centered_blocks[0][0]
-        
-        return None
-    
-    def _find_title_by_patterns(self, blocks: List[Dict[str, Any]]) -> Optional[str]:
-        """Find title using explicit title patterns"""
-        first_pages = [b for b in blocks if b["page"] <= 2]
-        
-        for block in first_pages:
-            text = block["text"].strip()
-            text_lower = text.lower()
-            
-            # Check for explicit title patterns
-            for pattern in self.title_patterns:
-                match = re.search(pattern, text_lower, re.IGNORECASE | re.MULTILINE)
-                if match:
-                    title = match.group(1).strip()
-                    if len(title.split()) >= 2:
-                        return title
-            
-            # Check for lines starting with common title indicators
-            if text_lower.startswith('title:'):
-                title = text[6:].strip()
-                if title:
-                    return title
-        
-        return None
-    
-    def _find_title_by_content(self, blocks: List[Dict[str, Any]]) -> Optional[str]:
-        """Find title based on content analysis"""
-        first_page = [b for b in blocks if b["page"] == 1]
-        
-        if not first_page:
-            return None
-        
-        # Sort by position (top to bottom)
-        first_page.sort(key=lambda x: x["y0"])
-        
-        # Look for first substantial text that could be a title
-        for block in first_page[:10]:  # Check first 10 blocks
-            text = block["text"].strip()
-            word_count = len(text.split())
-            
-            # Skip very short or very long text
-            if word_count < 2 or word_count > 20 or len(text) > 200:
-                continue
-            
-            # Skip common non-title text
-            text_lower = text.lower()
-            if any(skip in text_lower for skip in ['page', 'copyright', '©', 'abstract']):
-                continue
-            
-            # Prefer text with title-like characteristics
-            has_title_keywords = any(keyword in text_lower for keyword in self.title_keywords)
-            is_capitalized = text[0].isupper() if text else False
-            
-            if has_title_keywords or is_capitalized:
-                return text
-        
-        # Fallback: return first non-trivial text
-        for block in first_page[:5]:
-            text = block["text"].strip()
-            word_count = len(text.split())
-            if 3 <= word_count <= 15:
-                return text
-        
-        return None
-    
-    def _select_best_title(self, candidates: List[tuple], fallback: str) -> str:
-        """Select the best title from multiple candidates"""
-        # Filter out None candidates
-        valid_candidates = [(title, source) for title, source in candidates if title]
-        
-        if not valid_candidates:
-            return fallback or "Untitled Document"
-        
-        # Scoring system for different sources
-        source_scores = {
-            "pattern": 4,    # Explicit title patterns are best
-            "position": 3,   # Centered text is good
-            "font": 2,       # Large font is decent
-            "content": 1     # Content analysis is fallback
-        }
-        
-        # Score each candidate
-        scored_candidates = []
-        for title, source in valid_candidates:
-            base_score = source_scores.get(source, 0)
-            
-            # Additional scoring factors
-            word_count = len(title.split())
-            length_score = 1 if 3 <= word_count <= 10 else 0.5
-            
-            # Bonus for title-like keywords
-            keyword_bonus = 0.5 if any(kw in title.lower() for kw in self.title_keywords) else 0
-            
-            total_score = base_score + length_score + keyword_bonus
-            scored_candidates.append((title, total_score, source))
-        
-        # Sort by score and return best
-        scored_candidates.sort(key=lambda x: x[1], reverse=True)
-        
-        best_title = scored_candidates[0][0]
-        best_source = scored_candidates[0][2]
-        
-        self.logger.debug(f"Selected title from {best_source}: '{best_title}'")
-        return best_title
-    
-    def _clean_title(self, title: str) -> str:
-        """Clean and normalize the extracted title"""
-        if not title:
+        # Fallback if title is empty after cleaning
+        if not title.strip():
             return "Untitled Document"
         
-        # Remove extra whitespace
-        title = ' '.join(title.split())
-        
-        # Remove common prefixes
-        title = re.sub(r'^title[:\s]+', '', title, flags=re.IGNORECASE)
-        
-        # Remove file extensions if accidentally included
-        title = re.sub(r'\.(pdf|doc|docx|txt)$', '', title, flags=re.IGNORECASE)
-        
-        # Capitalize first letter if not already
-        if title and title[0].islower():
-            title = title[0].upper() + title[1:]
-        
-        # Limit length
-        if len(title) > 100:
-            # Try to cut at word boundary
-            title = title[:97] + "..."
-        
-        return title
+        return title.strip()
+
+# For backwards compatibility
+TitleExtractor = SmartTitleExtractor
