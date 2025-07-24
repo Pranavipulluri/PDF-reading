@@ -1,0 +1,35 @@
+{
+  "title": "Helmet Detection in CCTV Footage Using Deep Learning (YOLO & CNN) pulluripranavi@gmail.com",
+  "outline": [
+    {
+      "level": "H1",
+      "text": "H.T.No 2406DGAL144",
+      "page": 0
+    },
+    {
+      "level": "H2",
+      "text": "Literature Survey",
+      "page": 1
+    },
+    {
+      "level": "H1",
+      "text": "Proposed System",
+      "page": 1
+    },
+    {
+      "level": "H3",
+      "text": "Future Enhancements",
+      "page": 2
+    },
+    {
+      "level": "H2",
+      "text": "Proposed Algorithm: YOLO (You Only Look Once) for Helmet Detection",
+      "page": 3
+    },
+    {
+      "level": "H2",
+      "text": "Dataset Description",
+      "page": 6
+    }
+  ]
+}
