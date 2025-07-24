@@ -261,31 +261,6 @@ docker run --rm \
   pdf-extractor-ai:latest
 ```
 
-### Common Issues and Solutions
-
-1. **No headings detected**
-   ```bash
-   # Check font analysis
-   python src/main.py input.pdf output.json --system-info
-   ```
-
-2. **Low confidence scores**
-   - Document may have inconsistent formatting
-   - Try enabling all AI methods in ensemble
-
-3. **Processing timeout** 
-   - Large document may exceed 10s limit
-   - Check memory usage and optimize
-
-4. **ML model not loaded**
-   ```bash
-   # Verify model exists
-   ls -la models/heading_classifier.pkl
-   
-   # Retrain if needed
-   cd training && python train_classifier.py --lightweight
-   ```
-
 ### Advanced Diagnostics
 ```python
 # Performance profiling
@@ -295,28 +270,6 @@ detector = AdvancedHeadingDetector()
 stats = detector.get_performance_stats()
 print("Detection method contributions:", stats['method_contributions'])
 ```
-
-## 🏆 Competition Strategy
-
-This solution maximizes hackathon scoring through:
-
-### Technical Excellence
-1. **State-of-the-art AI**: Combines 4 different AI approaches
-2. **Robust Engineering**: Handles edge cases, errors, and diverse inputs
-3. **Performance Optimization**: Meets strict timing and memory requirements
-4. **Quality Assurance**: Comprehensive testing and validation
-
-### Scoring Maximization
-1. **Accuracy Focus**: Conservative thresholds minimize false positives
-2. **Comprehensive Coverage**: Multiple methods catch different heading types
-3. **Bonus Features**: Multilingual support for extra points
-4. **Innovation**: Novel ensemble approach combining rule-based + ML + NLP
-
-### Competitive Advantages
-1. **Multi-library approach**: More robust than single PDF library
-2. **Advanced ML features**: 50+ engineered features vs basic approaches
-3. **Semantic understanding**: NLP analysis beyond simple pattern matching
-4. **Production-ready**: Error handling, logging, monitoring, health checks
 
 ## 📚 Technical Deep Dive
 
