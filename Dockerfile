@@ -1,23 +1,13 @@
-# Ultra-Simple Dockerfile - Guaranteed to work on Windows Docker
 FROM python:3.11-slim
-
-# Install only essential system packages
-RUN apt-get update && apt-get install -y gcc && rm -rf /var/lib/apt/lists/*
-
+RUN apt-get update && apt-get install -y gcc libfontconfig1 && rm -rf /var/lib/apt/lists/*
 WORKDIR /app
-
-# Install ONLY PyMuPDF (the one that was working in your build)
-RUN pip install --no-cache-dir PyMuPDF==1.23.8
-
-# Copy only the essential files
-COPY src/main_ultra_simple.py ./main.py
-COPY run_ultra_simple.sh ./run.sh
-
-# Make executable and create directories
-RUN chmod +x run.sh && mkdir -p input output
-
-# Set environment
+COPY requirements.txt .
+RUN pip install --no-cache-dir -r requirements.txt
+COPY src/ ./src/
+COPY web_server.py ./
+COPY run.sh ./
+RUN chmod +x run.sh && mkdir -p input output models
+ENV PYTHONPATH=/app/src:/app
 ENV PYTHONUNBUFFERED=1
-
-# Simple command
-CMD ["./run.sh"]
+EXPOSE 5000
+CMD ["python", "web_server.py"]

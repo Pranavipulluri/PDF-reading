@@ -1,35 +1,179 @@
 {
-  "title": "Helmet Detection in CCTV Footage Using Deep Learning (YOLO & CNN) pulluripranavi@gmail.com",
+  "title": "Helmet Detection in CCTV Footage Using Deep Learning (YOLO &",
   "outline": [
     {
       "level": "H1",
-      "text": "H.T.No 2406DGAL144",
-      "page": 0
-    },
-    {
-      "level": "H2",
-      "text": "Literature Survey",
+      "text": "Helmet Detection in CCTV Footage Using Deep Learning (YOLO &",
       "page": 1
     },
     {
       "level": "H1",
-      "text": "Proposed System",
+      "text": "CNN)",
+      "page": 1
+    },
+    {
+      "level": "H1",
+      "text": "pulluripranavi@gmail.com",
+      "page": 1
+    },
+    {
+      "level": "H1",
+      "text": "H.T.No 2406DGAL144",
+      "page": 1
+    },
+    {
+      "level": "H2",
+      "text": "1.INTRODUCTION:",
       "page": 1
     },
     {
       "level": "H3",
-      "text": "Future Enhancements",
+      "text": "Literature Survey",
       "page": 2
     },
     {
       "level": "H2",
-      "text": "Proposed Algorithm: YOLO (You Only Look Once) for Helmet Detection",
+      "text": "3. Proposed System",
+      "page": 2
+    },
+    {
+      "level": "H3",
+      "text": "Future Enhancements",
       "page": 3
     },
     {
+      "level": "H3",
+      "text": "Proposed Algorithm: YOLO (You Only Look Once) for Helmet Detection",
+      "page": 4
+    },
+    {
+      "level": "H3",
+      "text": "How YOLO Works:",
+      "page": 4
+    },
+    {
       "level": "H2",
-      "text": "Dataset Description",
+      "text": "1. Input Image Processing : The input image is divided into grid. Each grid cell is",
+      "page": 4
+    },
+    {
+      "level": "H2",
+      "text": "2. Bounding Box Prediction : For each grid cell, YOLO predicts multiple bounding boxes,",
+      "page": 5
+    },
+    {
+      "level": "H2",
+      "text": "3. Anchor Boxes : YOLO uses pre-defined anchor boxes, which are shapes (width and",
+      "page": 5
+    },
+    {
+      "level": "H2",
+      "text": "4. Non-Maximum Suppression (NMS) : After making predictions, YOLO applies Non-",
+      "page": 5
+    },
+    {
+      "level": "H2",
+      "text": "5. Output Layer : The final output of the YOLO model consists of the bounding box",
+      "page": 5
+    },
+    {
+      "level": "H3",
+      "text": "Architecture of YOLO for Helmet Detection:",
+      "page": 5
+    },
+    {
+      "level": "H2",
+      "text": "1. Real-Time Processing : YOLO is highly optimized for speed, making it suitable for real-",
       "page": 6
+    },
+    {
+      "level": "H2",
+      "text": "2. Single Pass Detection : Unlike traditional object detection methods, YOLO performs",
+      "page": 6
+    },
+    {
+      "level": "H2",
+      "text": "3. Accuracy : YOLO'ability to capture contextual information in the image and predict",
+      "page": 6
+    },
+    {
+      "level": "H2",
+      "text": "4. End-to-End Training : YOLO can be trained end-to-end, meaning that the entire model",
+      "page": 6
+    },
+    {
+      "level": "H3",
+      "text": "YOLO Workflow for Helmet Detection:",
+      "page": 6
+    },
+    {
+      "level": "H2",
+      "text": "1. Preprocessing : Resize input images to fixed size (e.g., 416x416) and normalize pixel",
+      "page": 6
+    },
+    {
+      "level": "H2",
+      "text": "2. Feature Extraction : The image is passed through series of convolutional layers to",
+      "page": 6
+    },
+    {
+      "level": "H2",
+      "text": "3. Prediction and Bounding Box Calculation : For each grid cell, YOLO predicts multiple",
+      "page": 6
+    },
+    {
+      "level": "H2",
+      "text": "4. Non-Maximum Suppression : YOLO applies NMS to remove redundant bounding",
+      "page": 6
+    },
+    {
+      "level": "H2",
+      "text": "5. Postprocessing : The final output is the list of bounding boxes with class labels and",
+      "page": 6
+    },
+    {
+      "level": "H3",
+      "text": "RESULTS AND DESCRIPTION:",
+      "page": 7
+    },
+    {
+      "level": "H3",
+      "text": "• Metrics :",
+      "page": 7
+    },
+    {
+      "level": "H3",
+      "text": "• Challenges Overcome :",
+      "page": 7
+    },
+    {
+      "level": "H3",
+      "text": "Dataset Description",
+      "page": 7
+    },
+    {
+      "level": "H2",
+      "text": "1. Images File :",
+      "page": 8
+    },
+    {
+      "level": "H2",
+      "text": "2. Labels File :",
+      "page": 8
+    },
+    {
+      "level": "H2",
+      "text": "3. YAML File :",
+      "page": 8
+    },
+    {
+      "level": "H3",
+      "text": "CONCLUSION:",
+      "page": 12
     }
-  ]
+  ],
+  "metadata": {
+    "detected_language": "english",
+    "total_blocks_analyzed": 144
+  }
 }

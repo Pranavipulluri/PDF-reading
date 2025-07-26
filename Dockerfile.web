@@ -1,0 +1,44 @@
+# Dockerfile with Web UI Support
+# Supports both command-line and web interface modes
+
+FROM python:3.11-slim
+
+# Install system dependencies
+RUN apt-get update && apt-get install -y \
+    gcc \
+    libfontconfig1 \
+    libfreetype6 \
+    && rm -rf /var/lib/apt/lists/*
+
+# Set working directory
+WORKDIR /app
+
+# Copy requirements and install
+COPY requirements.web.txt requirements.txt
+RUN pip install --no-cache-dir -r requirements.txt
+
+# Copy all source files
+COPY src/ ./src/
+COPY web_server.py ./
+COPY run.sh ./
+
+# Make scripts executable
+RUN chmod +x run.sh
+
+# Create directories
+RUN mkdir -p input output models
+
+# Set environment variables
+ENV PYTHONPATH=/app/src:/app
+ENV PYTHONUNBUFFERED=1
+ENV FLASK_APP=web_server.py
+
+# Expose port for web interface
+EXPOSE 5000
+
+# Health check for web mode
+HEALTHCHECK --interval=30s --timeout=10s --start-period=10s --retries=3 \
+    CMD curl -f http://localhost:5000/health || exit 1
+
+# Default to web server, but can be overridden
+CMD ["python", "web_server.py"]

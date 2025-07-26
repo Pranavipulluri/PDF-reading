@@ -1,0 +1,23 @@
+# Web UI Requirements - Includes Flask for the web interface
+# Use this for the complete web-enabled version
+
+# Core PDF processing
+PyMuPDF==1.23.8
+numpy==1.24.3
+
+# Text processing
+regex==2023.8.8
+
+# Web framework
+Flask==2.3.3
+Werkzeug==2.3.7
+
+# Optional advanced features (can be omitted if build fails)
+scikit-learn==1.3.0
+pdfplumber==0.9.0
+nltk==3.8.1
+pandas==2.0.3
+
+# Utilities
+python-dateutil==2.8.2
+joblib==1.3.2
