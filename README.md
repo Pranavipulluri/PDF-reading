@@ -222,32 +222,6 @@ strategy_weights = {
 - **Concurrent processing**: Designed for single-threaded execution
 - **Resource limits**: Optimized for 8-core, 16GB systems
 
-## 🎯 Hackathon Scoring Optimization
-
-### Heading Detection Accuracy (25 points)
-- **Multi-method validation** reduces false positives
-- **Comprehensive pattern matching** improves recall
-- **Semantic analysis** handles edge cases
-- **Quality: Expected 90%+ F1-score**
-
-### Performance (10 points)
-- **Multi-stage optimization** for speed
-- **Memory-efficient processing**
-- **Lightweight model** under size constraints
-- **Target: <10 seconds for 50 pages**
-
-### Multilingual Bonus (10 points)
-- **6 languages supported** with native patterns
-- **Unicode text processing** for international documents
-- **Cultural formatting recognition**
-- **Automatic language detection**
-
-### Innovation Score
-- **Ensemble AI approach** (rule + ML + NLP + layout)
-- **Multi-library PDF processing** for robustness
-- **Advanced feature engineering** (50+ features)
-- **Comprehensive evaluation framework**
-
 ## 🔍 Debugging and Troubleshooting
 
 ### Enable Debug Mode
