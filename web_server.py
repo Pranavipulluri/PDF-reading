@@ -6,7 +6,7 @@ from flask import Flask, request, jsonify, render_template_string
 sys.path.append('/app/src')
 sys.path.append('src')
 try:
-    from main import extract_pdf_outline
+    from main_ultra_simple import extract_pdf_outline
 except ImportError:
     def extract_pdf_outline(pdf_path, output_path): return False
 
