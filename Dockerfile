@@ -6,7 +6,7 @@ RUN pip install --no-cache-dir -r requirements.txt
 COPY src/ ./src/
 COPY web_server.py ./
 COPY run.sh ./
-RUN chmod +x run.sh && mkdir -p input output models
+RUN chmod +x run.sh && mkdir -p input output
 ENV PYTHONPATH=/app/src:/app
 ENV PYTHONUNBUFFERED=1
 EXPOSE 5000
