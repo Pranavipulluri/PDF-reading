@@ -9,36 +9,36 @@ This advanced solution extracts structured outlines (Title + H1/H2/H3 headings) 
 ### Multi-Strategy Detection System
 Our solution uses an **ensemble approach** combining multiple AI techniques:
 
-1. **📚 Multi-Library PDF Processing**
+1. **Multi-Library PDF Processing**
    - **PyMuPDF**: Fast extraction with detailed font metadata
    - **PDFPlumber**: Layout-aware character-level analysis
    - **Cross-validation**: Combines results for enhanced accuracy
 
-2. **🔍 Advanced Layout Analysis** 
+2. **Advanced Layout Analysis** 
    - Font size distribution analysis with Z-scores and percentiles
    - Position-based detection (margins, centering, whitespace)
    - Line spacing and character spacing analysis
    - Multi-column document support
 
-3. **🤖 Machine Learning Classification**
+3. **Machine Learning Classification**
    - **Random Forest**: Ensemble decision trees optimized for heading detection
    - **Feature Engineering**: 50+ features including font, position, semantic, and contextual
    - **Lightweight Model**: <50MB trained model for deployment
    - **Cross-validation**: 5-fold CV for robust performance assessment
 
-4. **📝 Semantic Text Analysis (NLP)**
+4. **Semantic Text Analysis (NLP)**
    - **Language Detection**: Supports English, Japanese, Chinese, French, German, Spanish
    - **Vocabulary Analysis**: Domain-specific keyword detection (academic, technical, business, legal)
    - **Pattern Recognition**: Numbered sections (1.1.1), chapter markers, content indicators
    - **Text Classification**: Question vs statement vs instruction identification
 
-5. **⚡ Enhanced Rule Engine**
+5. **Enhanced Rule Engine**
    - **Font-based Rules**: Size ratios, style detection, hierarchy inference
    - **Pattern Matching**: Regular expressions for numbered sections and titles
    - **Position Rules**: Margin alignment, centering detection, whitespace analysis  
    - **Contextual Rules**: Surrounding text analysis and consistency checks
 
-6. **🎯 Ensemble Decision Making**
+6. **Ensemble Decision Making**
    - **Weighted Voting**: Each method contributes based on confidence and historical accuracy
    - **Consensus Bonuses**: Multiple methods agreeing increases confidence
    - **Hierarchy Validation**: Ensures logical H1→H2→H3 progression
@@ -51,7 +51,6 @@ Our solution uses an **ensemble approach** combining multiple AI techniques:
 - **Early Termination**: Skip processing when patterns are clear
 - **Resource Monitoring**: Memory usage tracking and limits
 
-## 🏗️ Enhanced Architecture
 
 ### Project Structure
 ```
@@ -61,7 +60,8 @@ pdf-outline-extractor/
 ├── README.md                     # This documentation
 ├── run.sh                       # Docker entry point
 ├── src/                         # Core application
-│   ├── main.py                  # Advanced orchestration engine
+│   ├── main.py
+|   |── main_ultra_simple.py               # Advanced orchestration engine
 │   ├── pdf_processor.py         # Multi-library PDF extraction  
 │   ├── layout_analyzer.py       # Advanced layout analysis
 │   ├── text_analyzer.py         # NLP and semantic analysis
@@ -70,6 +70,11 @@ pdf-outline-extractor/
 │   ├── heading_detector.py      # Ensemble decision engine
 │   ├── feature_extractor.py     # ML feature engineering
 │   ├── title_extractor.py       # Multi-strategy title extraction
+│   ├── visual_clustering.py     # Advanced unsupervised clustering for adaptive heading detection
+│   ├── parallel_processor.py    # Multi-threaded page processing for improved performance
+│   ├── outline_preview_generator.py # Creates human-readable outline previews
+│   ├── heading_context_tracker.py # Maintains hierarchical context and fixes outline gaps
+│   ├── header_footer_filter.py  # Automatically detects and filters repeated page elements
 │   └── utils.py                 # Utility functions
 ├── training/                    # ML model training system
 │   ├── generate_training_data.py # Synthetic training data generator
@@ -99,6 +104,21 @@ docker run --rm \
   -v $(pwd)/output:/app/output \
   --network none \
   pdf-extractor-ai:latest
+
+
+#running and testing using a simple web page
+setup_pdf_extractor.bat #directly run bat file to setup docker
+docker run -p 5000:5000 pdf-extractor
+
+# Then open in browser:
+http://localhost:5000
+
+
+# If u want to run locally
+pip install -r requirements.txt
+pip install Flask==2.3.3
+python web_server.py
+
 ```
 
 ### Advanced Usage
@@ -123,10 +143,12 @@ from heading_detector import AdvancedHeadingDetector
 print('All AI components loaded successfully')
 "
 ```
+All other files like ML and AI model is for advanced usage but it might take more than 10sec so you can use all other files in depth when we want to get info in depth without the time constraints but this simple setup with main file is enough for most of the files.
+for advanced models we can use main_ulra_simple.py file instead of main file.
 
-## 📊 AI Model Performance
+## 📊 Model Performance
 
-### Accuracy Metrics (Tested on 1000+ documents)
+### Accuracy Metrics
 - **Precision**: 94.2% ± 2.1% (minimal false positives)
 - **Recall**: 89.7% ± 3.4% (catches most headings) 
 - **F1-Score**: 91.9% ± 2.8% (balanced performance)
@@ -213,11 +235,11 @@ strategy_weights = {
 ### Memory Usage
 - **Peak RAM**: <800MB for 50-page documents
 - **Average RAM**: ~400MB during processing
-- **Model size**: ~45MB (well under 200MB limit)
+- **Model size**: ~45MB 
 - **Docker image**: ~380MB total
 
 ### Scalability
-- **Max pages**: 50 pages (hackathon requirement)
+- **Max pages**: 50 pages
 - **Max file size**: 100MB PDFs supported
 - **Concurrent processing**: Designed for single-threaded execution
 - **Resource limits**: Optimized for 8-core, 16GB systems
