@@ -1,4 +1,4 @@
-# PDF Outline Extractor v2.0 - Advanced AI Edition
+# PDF Outline Extractor
 
 ## 🎯 Overview
 
