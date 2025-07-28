@@ -12,11 +12,6 @@ docker system prune -f >nul 2>&1
 REM Create ultra-simple setup
 echo 📋 Step 2: Creating ultra-simple configuration...
 
-REM Copy ultra-simple Dockerfile
-copy Dockerfile.ultra-simple Dockerfile
-
-REM Ensure we have the ultra-simple main script
-copy src\main_ultra_simple.py main.py
 
 REM Copy ultra-simple run script  
 copy run_ultra_simple.sh run.sh
