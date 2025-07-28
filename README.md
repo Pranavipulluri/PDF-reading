@@ -143,8 +143,6 @@ from heading_detector import AdvancedHeadingDetector
 print('All AI components loaded successfully')
 "
 ```
-All other files like ML and AI model is for advanced usage but it might take more than 10sec so you can use all other files in depth when we want to get info in depth without the time constraints but this simple setup with main file is enough for most of the files.
-for advanced models we can use main_ulra_simple.py file instead of main file.
 
 ## 📊 Model Performance
 
@@ -316,3 +314,6 @@ def extract_comprehensive_features(block):
 ```
 
 This advanced AI-powered solution represents the state-of-the-art in PDF outline extraction, combining multiple cutting-edge techniques for maximum accuracy and robustness. The ensemble approach ensures high performance across diverse document types while meeting strict performance requirements.
+
+All other files like ML and AI model is for advanced usage but it might take more than 10sec so you can use all other files in depth when we want to get info in depth without the time constraints but this simple setup with main file is enough for most of the files.
+for advanced models we can use main_ulra_simple.py file instead of main file.
